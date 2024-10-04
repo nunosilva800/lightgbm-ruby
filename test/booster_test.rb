@@ -1,5 +1,7 @@
 require_relative "test_helper"
 
+require "timeout"
+
 class BoosterTest < Minitest::Test
   def test_model_file
     x_test = [[3.7, 1.2, 7.2, 9.0], [7.5, 0.5, 7.9, 0.0]]
@@ -14,8 +16,17 @@ class BoosterTest < Minitest::Test
     pid = fork do
       y_pred = booster.predict(x_test)
       assert_elements_in_delta [0.9823112229173586, 0.9583143724610858], y_pred.first(2)
+      exit!(0)
     end
-    Process.wait(pid)
+    begin
+      Timeout.timeout(1) do
+        Process.wait(pid)
+      end
+    rescue Timeout::Error
+      Process.kill('TERM', pid)
+      Process.wait(pid)
+      flunk "Child process did not complete within 1 second"
+    end
     assert_equal 0, $?.exitstatus, "Forked process failed"
   end
 
@@ -32,8 +43,17 @@ class BoosterTest < Minitest::Test
     pid = fork do
       y_pred = booster.predict(x_test)
       assert_elements_in_delta [0.9823112229173586, 0.9583143724610858], y_pred.first(2)
+      exit!(0)
     end
-    Process.wait(pid)
+    begin
+      Timeout.timeout(1) do
+        Process.wait(pid)
+      end
+    rescue Timeout::Error
+      Process.kill('TERM', pid)
+      Process.wait(pid)
+      flunk "Child process did not complete within 1 second"
+    end
     assert_equal 0, $?.exitstatus, "Forked process failed"
   end
 
